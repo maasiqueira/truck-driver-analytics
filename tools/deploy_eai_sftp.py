@@ -77,16 +77,16 @@ cd {remote_dir}
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -U pip wheel
-pip install -e .
+pip install -e ".[embedded]"
 echo 'Deploy finished.'
 """
     stdin, stdout, stderr = client.exec_command(commands, get_pty=True)
     stdout.channel.recv_exit_status()
     out = stdout.read().decode("utf-8", "replace")
     err = stderr.read().decode("utf-8", "replace")
-    print(out)
+    sys.stdout.buffer.write(out.encode("utf-8", errors="replace"))
     if err:
-        print(err, file=sys.stderr)
+        sys.stderr.buffer.write(err.encode("utf-8", errors="replace"))
     client.close()
 
 

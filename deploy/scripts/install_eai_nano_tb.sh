@@ -9,7 +9,7 @@ cd "$REPO"
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -U pip wheel
-pip install -e .
+pip install -e ".[embedded]"
 
 mkdir -p /mnt/microsd/tda 2>/dev/null || true
 export TDA_DATA_DIR="${TDA_DATA_DIR:-/mnt/microsd/tda}"

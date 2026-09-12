@@ -1,5 +1,6 @@
 # Publicar no GitHub (maasiqueira)
 
+Perfil: **https://github.com/maasiqueira**  
 Repositório sugerido: **https://github.com/maasiqueira/truck-driver-analytics**
 
 ## No seu PC (Windows)
@@ -43,7 +44,7 @@ Atualizar versão em campo:
 cd ~/truck-driver-analytics
 git pull
 source .venv/bin/activate
-pip install -e .
+pip install -e ".[embedded]"   # na placa EAI (sem PyTorch)
 sudo systemctl restart tda-eai-nano
 ```
 

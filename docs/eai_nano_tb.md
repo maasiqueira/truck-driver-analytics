@@ -69,7 +69,9 @@ cd truck-driver-analytics
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -U pip
-pip install -e .
+pip install -e ".[embedded]"
+
+> **RV1126B:** não instale `mediapipe` nesta placa (binário exige LSE). Use `dms_backend: stub` em `eai_nano_tb.yaml` até modelo RKNN/ONNX de rosto.
 ```
 
 Modelos:

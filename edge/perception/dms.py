@@ -100,7 +100,9 @@ class _TasksFaceLandmarker:
         return [(p.x * w, p.y * h) for p in lm]
 
 
-def _create_face_backend() -> _LegacyFaceMesh | _TasksFaceLandmarker | None:
+def _create_face_backend(backend: str = "auto") -> _LegacyFaceMesh | _TasksFaceLandmarker | None:
+    if backend in ("stub", "none", "off"):
+        return None
     if mp is None:
         return None
     if hasattr(mp, "solutions"):
@@ -115,9 +117,12 @@ def _create_face_backend() -> _LegacyFaceMesh | _TasksFaceLandmarker | None:
 class DmsRunner:
     ear_threshold: float = 0.21
     phone_runner: OnnxRunner | None = None
+    dms_backend: str = "auto"
 
     def __post_init__(self) -> None:
-        self._face = _create_face_backend()
+        self._face = _create_face_backend(self.dms_backend)
+        if self._face is None and self.dms_backend not in ("stub", "none", "off"):
+            log.warning("DMS face backend unavailable — cabine sem EAR/PERCLOS")
 
     def process(self, bgr: np.ndarray, timestamp_mono: float) -> InferenceResult:
         h, w = bgr.shape[:2]

@@ -46,6 +46,7 @@ def main() -> None:
     dms = DmsRunner(
         ear_threshold=cfg.thresholds.get("ear_closed", 0.21),
         phone_runner=phone_onnx if phone_onnx.ready else None,
+        dms_backend=str(inf.get("dms_backend", "auto")),
     )
     road = RoadRunner(
         input_size=int(inf.get("road_input_size", 640)),

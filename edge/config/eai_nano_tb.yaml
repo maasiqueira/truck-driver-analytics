@@ -6,35 +6,27 @@ cameras:
   driver:
     source: v4l2
     device: /dev/video23
-    width: 1920
-    height: 1080
+    width: 640
+    height: 480
     fps: 15
   road:
     source: v4l2
     device: /dev/video31
-    width: 1920
-    height: 1080
+    width: 640
+    height: 480
     fps: 15
   sync_offset_ms: 0
   queue_size: 4
   drop_stale: true
 
 capture:
-  backend: gstreamer
-  # Ajuste format=NV12/MJPEG conforme `v4l2-ctl -d /dev/video23 --list-formats-ext`
-  driver_pipeline: >
-    v4l2src device=/dev/video23 io-mode=mmap !
-    video/x-raw,format=NV12,width=1920,height=1080,framerate=15/1 !
-    videoconvert ! video/x-raw,format=BGR !
-    appsink drop=true max-buffers=2 sync=false
-  road_pipeline: >
-    v4l2src device=/dev/video31 io-mode=mmap !
-    video/x-raw,format=NV12,width=1920,height=1080,framerate=15/1 !
-    videoconvert ! video/x-raw,format=BGR !
-    appsink drop=true max-buffers=2 sync=false
+  # OpenCV + V4L2 estável no RV1126 (GStreamer via appsink falhou no teste)
+  backend: opencv
 
 inference:
   provider: onnxruntime
+  # RV1126B: sem MediaPipe (LSE); DMS limitado até RKNN/ONNX face dedicado
+  dms_backend: stub
   road_yolo: models/weights/yolov8n.onnx
   road_input_size: 640
   target_fps_driver: 8

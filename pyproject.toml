@@ -1,17 +1,24 @@
 [project]
 name = "truck-driver-analytics"
 version = "0.1.0"
-description = "Embedded driver behavior analytics — BeagleY-AI + STM32MP157 gateway"
+description = "Embedded driver behavior analytics (DMS/ADAS)"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
   "numpy>=1.24",
   "opencv-python-headless>=4.8",
   "PyYAML>=6.0",
-  "onnxruntime>=1.16",
-  "ultralytics>=8.1",
+]
+
+[project.optional-dependencies]
+edge = [
   "mediapipe>=0.10.9",
-  "pyzmq>=25.0",
+  "onnxruntime>=1.16",
+]
+yolo = [
+  "ultralytics>=8.1",
+]
+fleet = [
   "fastapi>=0.109",
   "uvicorn[standard]>=0.27",
   "httpx>=0.26",
@@ -19,12 +26,20 @@ dependencies = [
   "pydantic-settings>=2.1",
   "aiosqlite>=0.19",
   "python-multipart>=0.0.6",
+  "pyzmq>=25.0",
 ]
-
-[project.optional-dependencies]
 dev = ["pytest>=7.4", "ruff>=0.1"]
 can = ["python-can>=4.3"]
 gps = ["pynmea2>=1.19"]
+# Placa embarcada (EAI-Nano-TB): sem PyTorch/Ultralytics por padrão
+# Placa ARM sem LSE (ex.: RV1126B): sem MediaPipe — use gravação + ADAS leve
+embedded = [
+  "onnxruntime>=1.16",
+  "httpx>=0.26",
+]
+mediapipe = [
+  "mediapipe>=0.10.9",
+]
 
 [project.scripts]
 tda-run = "edge.main:main"
