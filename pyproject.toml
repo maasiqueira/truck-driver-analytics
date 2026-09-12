@@ -1,0 +1,41 @@
+[project]
+name = "truck-driver-analytics"
+version = "0.1.0"
+description = "Embedded driver behavior analytics — BeagleY-AI + STM32MP157 gateway"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.24",
+  "opencv-python-headless>=4.8",
+  "PyYAML>=6.0",
+  "onnxruntime>=1.16",
+  "ultralytics>=8.1",
+  "mediapipe>=0.10.9",
+  "pyzmq>=25.0",
+  "fastapi>=0.109",
+  "uvicorn[standard]>=0.27",
+  "httpx>=0.26",
+  "pydantic>=2.5",
+  "pydantic-settings>=2.1",
+  "aiosqlite>=0.19",
+  "python-multipart>=0.0.6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4", "ruff>=0.1"]
+can = ["python-can>=4.3"]
+gps = ["pynmea2>=1.19"]
+
+[project.scripts]
+tda-run = "edge.main:main"
+tda-benchmark-capture = "edge.capture.benchmark:main"
+tda-replay = "tools.replay.replay_session:main"
+tda-gateway = "edge.gateway_stm32.service:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["edge*", "backend*", "tools*", "models*"]

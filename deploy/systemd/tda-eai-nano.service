@@ -1,0 +1,17 @@
+[Unit]
+Description=Truck Driver Analytics — EAI-Nano-TB (RV1126B)
+After=local-fs.target network.target
+Wants=local-fs.target
+
+[Service]
+Type=simple
+User=nano
+WorkingDirectory=/home/nano/truck-driver-analytics
+Environment=TDA_CONFIG=/home/nano/truck-driver-analytics/edge/config/eai_nano_tb.yaml
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/nano/truck-driver-analytics/.venv/bin/tda-run --config ${TDA_CONFIG}
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

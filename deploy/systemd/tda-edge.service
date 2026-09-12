@@ -1,0 +1,15 @@
+[Unit]
+Description=Truck Driver Analytics edge runtime (BeagleY-AI)
+After=network.target
+
+[Service]
+Type=simple
+User=tda
+WorkingDirectory=/opt/truck-driver-analytics
+Environment=TDA_CONFIG=/opt/truck-driver-analytics/edge/config/default.yaml
+ExecStart=/opt/truck-driver-analytics/.venv/bin/tda-run --config ${TDA_CONFIG}
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

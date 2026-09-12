@@ -1,0 +1,14 @@
+[Unit]
+Description=TDA STM32MP157 CAN/GPS gateway
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/truck-driver-analytics
+ExecStart=/opt/truck-driver-analytics/.venv/bin/tda-gateway --config edge/config/gateway_stm32.yaml
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

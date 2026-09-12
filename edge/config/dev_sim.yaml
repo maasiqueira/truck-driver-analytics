@@ -1,0 +1,62 @@
+# Desenvolvimento no PC — arquivos de vídeo ou webcam única
+platform: dev_sim
+
+cameras:
+  driver:
+    source: file
+    path: data/samples/driver2.mp4
+    width: 640
+    height: 480
+    fps: 15
+  road:
+    source: file
+    path: data/samples/road2.mp4
+    width: 640
+    height: 480
+    fps: 15
+  queue_size: 4
+  drop_stale: true
+
+capture:
+  backend: opencv
+
+inference:
+  provider: onnxruntime
+  dms_face: models/weights/yolov8n.onnx
+  road_yolo: models/weights/yolov8n.onnx
+  road_input_size: 640
+  target_fps_driver: 10
+  target_fps_road: 10
+
+gateway:
+  enabled: false
+
+storage:
+  data_dir: ./data/runtime
+  ring_buffer_s: 60
+  clip_pre_s: 3
+  clip_post_s: 5
+  clip_max_s: 30
+  sqlite: events.db
+
+sync:
+  enabled: false
+
+thresholds:
+  ear_closed: 0.21
+  perclos_window_s: 60
+  perclos_ratio: 0.15
+  perclos_duration_s: 4.0
+  distraction_yaw_deg: 35
+  distraction_pitch_deg: 25
+  distraction_duration_s: 2.5
+  phone_confirm_windows: 2
+  phone_window_s: 3.0
+  lane_departure_offset_ratio: 0.12
+  tailgate_ttc_s: 2.0
+  hard_brake_m_s2: 4.5
+  hard_turn_yaw_rate_deg_s: 25
+
+privacy:
+  pause_cabin_when_ignition_off: false
+  cabin_min_speed_kmh: 0

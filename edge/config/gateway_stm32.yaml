@@ -1,0 +1,25 @@
+# STM32MP157 — serviço gateway (CAN + GPS + bridge USB)
+platform: stm32mp157_gateway
+
+listen:
+  host: 0.0.0.0
+  port: 8765
+
+can:
+  interface: can0
+  bustype: socketcan
+  bitrate: 250000
+  j1939:
+    wheel_speed_pgn: 0xFEF1
+    # Documentar PGNs reais do caminhão em docs/can_pgn_map.md
+
+gps:
+  port: /dev/ttyUSB0
+  baud: 9600
+
+modem:
+  # Uplink delegado ao stack Linux (NetworkManager/qmi); sync HTTP via BeagleY ou STM32
+  managed_by: network_manager
+
+logging:
+  level: INFO

@@ -1,0 +1,79 @@
+# BeagleY-AI (AM67A) — produção embarcada
+platform: beagley_ai_am67a
+
+cameras:
+  driver:
+    source: v4l2
+    device: /dev/video0
+    width: 1280
+    height: 720
+    fps: 15
+    # Arducam V3Link: ajustar índice após `media-ctl -p` / udev
+  road:
+    source: v4l2
+    device: /dev/video1
+    width: 1280
+    height: 720
+    fps: 15
+  sync_offset_ms: 0
+  queue_size: 4
+  drop_stale: true
+
+capture:
+  backend: gstreamer
+  # IMX219 + libcamera (BeagleY Yocto) — fallback v4l2src
+  driver_pipeline: >
+    v4l2src device=/dev/video0 ! video/x-raw,width=1280,height=720,framerate=15/1
+    ! videoconvert ! video/x-raw,format=BGR ! appsink drop=true max-buffers=2 sync=false
+  road_pipeline: >
+    v4l2src device=/dev/video1 ! video/x-raw,width=1280,height=720,framerate=15/1
+    ! videoconvert ! video/x-raw,format=BGR ! appsink drop=true max-buffers=2 sync=false
+
+inference:
+  provider: onnxruntime
+  # AM67A: compilar modelos com TIDL e apontar paths .onnx / artifacts em models/weights/
+  dms_face: models/weights/face_landmarks.onnx
+  road_yolo: models/weights/yolov8n.onnx
+  road_input_size: 640
+  target_fps_driver: 12
+  target_fps_road: 12
+
+thresholds:
+  ear_closed: 0.21
+  perclos_window_s: 60
+  perclos_ratio: 0.15
+  perclos_duration_s: 4.0
+  distraction_yaw_deg: 35
+  distraction_pitch_deg: 25
+  distraction_duration_s: 2.5
+  phone_confirm_windows: 2
+  phone_window_s: 3.0
+  lane_departure_offset_ratio: 0.12
+  tailgate_ttc_s: 2.0
+  hard_brake_m_s2: 4.5
+  hard_turn_yaw_rate_deg_s: 25
+
+gateway:
+  enabled: true
+  host: 192.168.7.1
+  port: 8765
+  reconnect_s: 5
+
+storage:
+  data_dir: /var/lib/tda
+  ring_buffer_s: 120
+  clip_pre_s: 5
+  clip_post_s: 10
+  clip_max_s: 30
+  sqlite: events.db
+
+sync:
+  enabled: true
+  api_base: https://fleet.example.com/api/v1
+  device_id: beagley-001
+  batch_size: 50
+  interval_s: 60
+
+privacy:
+  pause_cabin_when_ignition_off: true
+  cabin_min_speed_kmh: 5

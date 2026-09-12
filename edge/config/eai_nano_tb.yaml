@@ -1,0 +1,92 @@
+# EASY EAI-Nano-TB — Rockchip RV1126B, Armbian
+# Câmeras EAI-CAM-IMX415: driver=/dev/video23, road=/dev/video31
+platform: eai_nano_rv1126b
+
+cameras:
+  driver:
+    source: v4l2
+    device: /dev/video23
+    width: 1920
+    height: 1080
+    fps: 15
+  road:
+    source: v4l2
+    device: /dev/video31
+    width: 1920
+    height: 1080
+    fps: 15
+  sync_offset_ms: 0
+  queue_size: 4
+  drop_stale: true
+
+capture:
+  backend: gstreamer
+  # Ajuste format=NV12/MJPEG conforme `v4l2-ctl -d /dev/video23 --list-formats-ext`
+  driver_pipeline: >
+    v4l2src device=/dev/video23 io-mode=mmap !
+    video/x-raw,format=NV12,width=1920,height=1080,framerate=15/1 !
+    videoconvert ! video/x-raw,format=BGR !
+    appsink drop=true max-buffers=2 sync=false
+  road_pipeline: >
+    v4l2src device=/dev/video31 io-mode=mmap !
+    video/x-raw,format=NV12,width=1920,height=1080,framerate=15/1 !
+    videoconvert ! video/x-raw,format=BGR !
+    appsink drop=true max-buffers=2 sync=false
+
+inference:
+  provider: onnxruntime
+  road_yolo: models/weights/yolov8n.onnx
+  road_input_size: 640
+  target_fps_driver: 8
+  target_fps_road: 8
+
+thresholds:
+  ear_closed: 0.21
+  perclos_window_s: 60
+  perclos_ratio: 0.15
+  perclos_duration_s: 4.0
+  distraction_yaw_deg: 35
+  distraction_pitch_deg: 25
+  distraction_duration_s: 2.5
+  phone_confirm_windows: 2
+  phone_window_s: 3.0
+  lane_departure_offset_ratio: 0.12
+  tailgate_ttc_s: 2.0
+  hard_brake_m_s2: 4.5
+  hard_turn_yaw_rate_deg_s: 25
+
+gateway:
+  enabled: false
+
+# microSD — ajuste data_dir para o ponto de montagem real (ver docs/eai_nano_tb.md)
+storage:
+  # mmcblk1p2 (cartão) — montar em /mnt/microsd; senão usa eMMC em /home/nano/tda-data
+  data_dir: /home/nano/tda-data
+  ring_buffer_s: 90
+  clip_pre_s: 5
+  clip_post_s: 10
+  clip_max_s: 30
+  sqlite: events.db
+
+recording:
+  enabled: true
+  video_subdir: videos
+  segment_s: 900
+  codec: mp4v
+
+analysis_log:
+  enabled: true
+  subdir: analysis
+  flush_interval_s: 1.0
+
+sync:
+  enabled: false
+  device_id: eai-nano-001
+
+privacy:
+  pause_cabin_when_ignition_off: false
+  cabin_min_speed_kmh: 5
+
+display:
+  enabled: false
+  # MIPI-DSI: preview futuro (gstreamer kmssink / placa EASY)
