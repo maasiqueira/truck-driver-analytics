@@ -25,15 +25,22 @@ capture:
 
 inference:
   provider: onnxruntime
-  # RV1126B: sem MediaPipe (LSE); DMS limitado até RKNN/ONNX face dedicado
-  dms_backend: stub
+  # RV1126B: RetinaFace RKNN (proxy EAR/MAR) + YOLOv5n RKNN para celular
+  dms_backend: rknn
+  dms_rknn: models/weights/RetinaFace_mobile320_rv1126b_fp.rknn
+  dms_face_score_thresh: 0.35
+  dms_phone_via_rknn: true
+  road_backend: rknn
+  road_rknn: models/weights/yolov5n_rv1126b_fp.rknn
+  road_conf_thresh: 0.35
   road_yolo: models/weights/yolov8n.onnx
   road_input_size: 640
   target_fps_driver: 8
   target_fps_road: 8
 
 thresholds:
-  ear_closed: 0.21
+  # RetinaFace proxy EAR — recalibrar no veículo (MediaPipe ~0.21)
+  ear_closed: 0.72
   perclos_window_s: 60
   perclos_ratio: 0.15
   perclos_duration_s: 4.0

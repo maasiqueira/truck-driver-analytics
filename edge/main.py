@@ -43,15 +43,39 @@ def main() -> None:
 
     inf = cfg.inference
     phone_onnx = OnnxRunner(inf.get("road_yolo", "models/weights/yolov8n.onnx"))
+    rknn_yolo_path = inf.get("road_rknn", "models/weights/yolov5n_rv1126b_fp.rknn")
+    road_backend = str(inf.get("road_backend", "auto"))
+    phone_via_rknn = bool(inf.get("dms_phone_via_rknn", False))
+    shared_yolo = None
+    if phone_via_rknn or road_backend == "rknn":
+        from edge.perception.road import resolve_road_backend
+        from edge.perception.yolov5_rknn import Yolov5RknnDetector
+
+        if resolve_road_backend(road_backend, rknn_yolo_path) == "rknn" or phone_via_rknn:
+            shared_yolo = Yolov5RknnDetector(
+                rknn_yolo_path,
+                input_size=int(inf.get("road_input_size", 640)),
+                conf_thresh=float(inf.get("road_conf_thresh", 0.25)),
+            )
     dms = DmsRunner(
         ear_threshold=cfg.thresholds.get("ear_closed", 0.21),
-        phone_runner=phone_onnx if phone_onnx.ready else None,
+        phone_runner=phone_onnx if phone_onnx.ready and not phone_via_rknn else None,
         dms_backend=str(inf.get("dms_backend", "auto")),
+        rknn_model_path=str(
+            inf.get("dms_rknn", "models/weights/RetinaFace_mobile320_rv1126b_fp.rknn")
+        ),
+        face_score_thresh=float(inf.get("dms_face_score_thresh", 0.5)),
+        phone_via_rknn=phone_via_rknn,
+        yolo_rknn=shared_yolo,
     )
     road = RoadRunner(
         input_size=int(inf.get("road_input_size", 640)),
         model_path=inf.get("road_yolo", "models/weights/yolov8n.onnx"),
+        rknn_model_path=rknn_yolo_path,
+        road_backend=road_backend,
+        conf_thresh=float(inf.get("road_conf_thresh", 0.25)),
         lane_departure_offset_ratio=cfg.thresholds.get("lane_departure_offset_ratio", 0.12),
+        rknn_detector=shared_yolo,
     )
 
     fusion = FusionEngine(cfg)

@@ -70,9 +70,17 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -U pip
 pip install -e ".[embedded]"
-
-> **RV1126B:** não instale `mediapipe` nesta placa (binário exige LSE). Use `dms_backend: stub` em `eai_nano_tb.yaml` até modelo RKNN/ONNX de rosto.
 ```
+
+> **RV1126B:** não instale `mediapipe` nesta placa (binário exige LSE). Use `dms_backend: rknn` com RetinaFace (ver abaixo).
+
+**RKNN (NPU):** instale `rknn-toolkit-lite2` 2.3.2 (wheel aarch64 cp310) no venv. Copie os `.rknn` para `models/weights/` (não versionados no git; gere com `tools/rknn_smoke/`):
+
+- Estrada: `yolov5n_rv1126b_fp.rknn` + `road_backend: rknn`
+- Cabine: `RetinaFace_mobile320_rv1126b_fp.rknn` + `dms_backend: rknn` (EAR/MAR são *proxies* geométricos — ajuste `thresholds.ear_closed` no veículo)
+- Celular: `dms_phone_via_rknn: true` (reutiliza o mesmo YOLOv5n)
+
+Se `init_runtime` falhar: `sudo chmod 666 /dev/rknpu` (ou udev permanente). Sync rápido: `python tools/sync_road_rknn.py`.
 
 Modelos:
 

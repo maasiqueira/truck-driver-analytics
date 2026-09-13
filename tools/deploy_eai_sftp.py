@@ -19,6 +19,8 @@ EXCLUDE_DIRS = {
     "data/runtime",
     ".git",
     ".cursor",
+    "Rockchip",
+    "tools/rknn_smoke",
 }
 EXCLUDE_SUFFIX = {".pyc", ".mp4", ".db"}
 

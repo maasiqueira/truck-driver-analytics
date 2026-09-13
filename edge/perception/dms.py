@@ -100,8 +100,29 @@ class _TasksFaceLandmarker:
         return [(p.x * w, p.y * h) for p in lm]
 
 
-def _create_face_backend(backend: str = "auto") -> _LegacyFaceMesh | _TasksFaceLandmarker | None:
-    if backend in ("stub", "none", "off"):
+def _create_face_backend(
+    backend: str = "auto",
+    rknn_model_path: str = "models/weights/RetinaFace_mobile320_rv1126b_fp.rknn",
+    face_score_thresh: float = 0.5,
+) -> _LegacyFaceMesh | _TasksFaceLandmarker | Any | None:
+    b = (backend or "auto").lower()
+    if b in ("stub", "none", "off"):
+        return None
+    rknn_file = Path(rknn_model_path)
+    if b == "rknn" or (b == "auto" and rknn_file.is_file()):
+        try:
+            import rknnlite  # noqa: F401
+
+            from edge.perception.retinaface_rknn import RetinaFaceRknn
+
+            if rknn_file.is_file():
+                return RetinaFaceRknn(rknn_file, score_thresh=face_score_thresh)
+            if b == "rknn":
+                log.warning("DMS rknn model missing: %s", rknn_file)
+        except ImportError:
+            if b == "rknn":
+                log.warning("rknnlite not installed for DMS")
+    if b == "rknn":
         return None
     if mp is None:
         return None
@@ -118,10 +139,23 @@ class DmsRunner:
     ear_threshold: float = 0.21
     phone_runner: OnnxRunner | None = None
     dms_backend: str = "auto"
+    rknn_model_path: str = "models/weights/RetinaFace_mobile320_rv1126b_fp.rknn"
+    face_score_thresh: float = 0.5
+    phone_via_rknn: bool = False
+    yolo_rknn: Any = None
+    phone_conf_thresh: float = 0.35
 
     def __post_init__(self) -> None:
-        self._face = _create_face_backend(self.dms_backend)
-        if self._face is None and self.dms_backend not in ("stub", "none", "off"):
+        self._face = _create_face_backend(
+            self.dms_backend,
+            self.rknn_model_path,
+            self.face_score_thresh,
+        )
+        if isinstance(self._face, object) and self._face.__class__.__name__ == "RetinaFaceRknn":
+            log.info("DMS face backend: rknn (%s)", self.rknn_model_path)
+        elif self._face is not None:
+            log.info("DMS face backend: mediapipe")
+        elif self.dms_backend not in ("stub", "none", "off"):
             log.warning("DMS face backend unavailable — cabine sem EAR/PERCLOS")
 
     def process(self, bgr: np.ndarray, timestamp_mono: float) -> InferenceResult:
@@ -131,20 +165,38 @@ class DmsRunner:
         rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
 
         if self._face is not None:
-            pts = self._face.process(rgb, w, h)
-            if pts:
-                ear_l = eye_aspect_ratio(pts, LEFT_EYE)
-                ear_r = eye_aspect_ratio(pts, RIGHT_EYE)
-                ear = (ear_l + ear_r) / 2.0
-                mar = mouth_aspect_ratio(pts)
-                metrics["ear"] = ear
-                metrics["mar"] = mar
-                metrics["eyes_closed"] = 1.0 if ear < self.ear_threshold else 0.0
-                nose = pts[1]
-                metrics["head_yaw_approx"] = (nose[0] / w - 0.5) * 90.0
-                metrics["head_pitch_approx"] = (nose[1] / h - 0.45) * 90.0
+            from edge.perception.retinaface_rknn import RetinaFaceRknn
 
-        if self.phone_runner and self.phone_runner.ready:
+            if isinstance(self._face, RetinaFaceRknn):
+                face = self._face.detect(bgr)
+                if face:
+                    from edge.perception.dms_rknn_metrics import metrics_from_retinaface
+
+                    metrics.update(metrics_from_retinaface(face, w, h))
+                    metrics["eyes_closed"] = 1.0 if metrics.get("ear", 1.0) < self.ear_threshold else 0.0
+            else:
+                pts = self._face.process(rgb, w, h)
+                if pts:
+                    ear_l = eye_aspect_ratio(pts, LEFT_EYE)
+                    ear_r = eye_aspect_ratio(pts, RIGHT_EYE)
+                    ear = (ear_l + ear_r) / 2.0
+                    mar = mouth_aspect_ratio(pts)
+                    metrics["ear"] = ear
+                    metrics["mar"] = mar
+                    metrics["eyes_closed"] = 1.0 if ear < self.ear_threshold else 0.0
+                    nose = pts[1]
+                    metrics["head_yaw_approx"] = (nose[0] / w - 0.5) * 90.0
+                    metrics["head_pitch_approx"] = (nose[1] / h - 0.45) * 90.0
+
+        if self.phone_via_rknn and self.yolo_rknn is not None:
+            detections.extend(
+                self.yolo_rknn.detect_classes(
+                    bgr,
+                    (67,),
+                    labels={67: "cell_phone"},
+                )
+            )
+        elif self.phone_runner and self.phone_runner.ready:
             detections.extend(self._detect_phones_yolo(bgr))
 
         return InferenceResult(
